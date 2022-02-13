@@ -52,7 +52,7 @@ public class Network {
 
     public static void connect() {
         try {
-            socket = new Socket("localhost", 8189);
+            socket = new Socket("localhost", 8185);
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
             Thread clientListenerThread = new Thread(() -> {
