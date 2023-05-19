@@ -10,7 +10,6 @@ public class DatabaseOfParticipants {
     private static PreparedStatement preparedStatementRegistration;
     private static PreparedStatement preparedStatementChangeData;
     private static PreparedStatement preparedStatementGetNicknameByLoginAndPassword;
-    private static PreparedStatement preparedStatementUniqueness;
 
 
     private static void createDB() throws SQLException {
@@ -36,16 +35,34 @@ public class DatabaseOfParticipants {
 
     public static boolean presenceInDatabase(String nick, String login, String password) throws SQLException {
         boolean result = false;
-        String preRequestNick = "SELECT EXISTS(SELECT * FROM [chat-users] WHERE nickname = ?)";
-   /* String preRequestLogin = "SELECT login FROM [chat-users] WHERE login=?";
-    String preRequestPass = "SELECT password FROM [chat-users] WHERE password=?";*/
-        preparedStatementUniqueness = connection.prepareStatement(preRequestNick);
-        preparedStatementUniqueness.setString(1, preRequestNick);
-        ResultSet resultSet = preparedStatementUniqueness.executeQuery();
-        if (resultSet.next()) return result;
-        return true;
-    }
+        String preRequestNick = "SELECT * FROM [chat-users] WHERE nickname = ?";
+        String preRequestLogin = "SELECT * FROM [chat-users] WHERE login=?";
+        String preRequestPass = "SELECT * FROM [chat-users] WHERE password=?";
 
+        PreparedStatement preparedStatementUniquenessNick = connection.prepareStatement(preRequestNick);
+        preparedStatementUniquenessNick.setString(1, nick);
+        try (ResultSet nickResultSet = preparedStatementUniquenessNick.executeQuery()) {
+
+            PreparedStatement preparedStatementUniquenessLogin = connection.prepareStatement(preRequestLogin);
+            preparedStatementUniquenessLogin.setString(1, login);
+            try (ResultSet loginResultSet = preparedStatementUniquenessLogin.executeQuery()) {
+
+                PreparedStatement preparedStatementUniquenessPassword = connection.prepareStatement(preRequestPass);
+                preparedStatementUniquenessPassword.setString(1, password);
+                try (ResultSet passwordResultSet = preparedStatementUniquenessPassword.executeQuery()) {
+
+                    return nickResultSet.next() || loginResultSet.next() || passwordResultSet.next();
+                }catch (SQLException e){
+                    e.printStackTrace();
+                }
+            }catch (SQLException e){
+                e.printStackTrace();
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return result;
+    }
 
 
     public static boolean changeData(String nick, String login, String password) throws SQLException {
@@ -104,9 +121,10 @@ public class DatabaseOfParticipants {
 
 
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
-        String nick = "Mark";
-        String login = "mark";
-        String password = "pass11";
+        String nick = "Dan1";
+        String login = "dan1";
+        String password = "pass6" +
+                "";
         connect();
         createDB();
         if (userForRegistration(nick, login, password)) return;
@@ -114,13 +132,17 @@ public class DatabaseOfParticipants {
     }
 
     private static boolean userForRegistration(String nick, String login, String password) throws SQLException {
-        boolean flag = presenceInDatabase(nick, login, password);
-        System.out.println(flag);
-        if(flag) {
-            System.out.println("Пользователь есть в базе");
+        boolean flag = true;
+//        System.out.println(flag);
+
+        boolean dataAvailability = presenceInDatabase(nick, login, password);
+
+        if (flag == dataAvailability) {
+            System.out.println("Пользователь c такими регистрационными данными есть в базе");
             return true;
         } else {
             registration(nick, login, password);
+            System.out.printf("Пользователь: %s зарегистрирован в базе%n", nick);
         }
 
         return false;
